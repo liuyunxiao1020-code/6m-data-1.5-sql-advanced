@@ -1,592 +1,211 @@
-# **Lesson Plan: Advanced SQL for Business Insights**
+# 🎓 Lesson 1.5: SQL Advanced — Instructor Guide
 
-### Lesson Overview
+## Session Overview
 
-This lesson introduces advanced query and statements. Learners will be able to use meta queries to retrieve information about the database, use joins and unions to combine data from multiple tables, use window functions to calculate aggregates over a set of rows, use subqueries, and apply common table expressions to create temporary tables.
+| Item | Detail |
+|------|--------|
+| **Duration** | 3 hours |
+| **Format** | Flipped Classroom + Hands-On SQL in DbGate |
+| **Prerequisites** | SQL DML (Lesson 1.4); able to write SELECT/WHERE/GROUP BY; `unit-1-5.db` downloaded |
+| **Tools** | DuckDB + DbGate |
+| **Dataset** | SafeDrive Insurance (`unit-1-5.db`) — 4 tables: `address`, `car`, `claim`, `client` |
+
+### Agenda
+
+| Time | Section | Focus |
+|------|---------|-------|
+| 0:00 – 0:55 | Part 1: Joins & Unions | Combining data from multiple tables |
+| 0:55 – 1:00 | Break | — |
+| 1:00 – 1:55 | Part 2: Window Functions | Row-level analytics without losing detail |
+| 1:55 – 2:00 | Break | — |
+| 2:00 – 2:55 | Part 3: Subqueries & CTEs | Nested logic and readable query structures |
+| 2:55 – 3:00 | Wrap-Up | Key Takeaways & Post-Class Assignment Briefing |
+
+> **Before class:** Use `SHOW TABLES;` and `DESCRIBE table_name;` to explore the database structure with students.
 
 ---
 
-## **Part 1: The Map and the Bridge (Joins & Unions)** 
+## 🏃 Part 1: Joins & Unions (55 min)
 
-### **Learning Objectives**
+### 🎯 Learning Objective
+Execute INNER, LEFT, RIGHT, and FULL OUTER JOINs to combine data across multiple tables, and use UNION to stack result sets.
 
-* Navigate database schemas using Meta Queries.  
-* Combine data using 4 Join types and Unions.
+### 📖 Theory Recap (10 min)
 
-### **Theory Recap**
+**Analogy:** Imagine a party with two guest lists — one from the host, one from the caterer.
 
-**The Analogy:** Imagine you are at a party. You have a list of names (client) and a list of who brought which gift (claim).
+| Join Type | The Party Analogy | What it returns |
+|-----------|-------------------|-----------------|
+| **INNER JOIN** | Only guests who appear on *both* lists | Matching rows only |
+| **LEFT JOIN** | Everyone on the host's list; empty box for no caterer match | All left rows + matched right rows |
+| **RIGHT JOIN** | Everyone on the caterer's list | All right rows + matched left rows |
+| **FULL JOIN** | Everyone from both lists, even if unmatched | All rows from both tables |
+| **UNION** | Combine two identical guest lists into one | Stacked rows (removes duplicates) |
 
-* **Inner Join:** Only people at the party who brought a gift.  
-* **Left Join:** Everyone at the party; if they didn't bring a gift, the "gift" column is just an empty box (NULL).  
-* **Union:** Putting two lists of names (e.g., Employees and Contractors) into one long "Staff" list.
+### 🛠️ Hands-On Activity: "The Insurance Report" (35 min)
 
-### **Workshop**
-
-Open DbGate and create a new connection to the DuckDB database file `db/unit-1-5.db`.
-
-The tables we will be using are in the `main` (default) schema.
-
-**Analogy:** "Before we build the bridge, we need to know the terrain. Let's look at our 'Card Catalog'."
-
-#### List and describe tables
-To list all the tables in `main`, run the following query:
-
+**Part A — Explore the schema (5 min):**
 ```sql
 SHOW TABLES;
+DESCRIBE claim;
 ```
 
-You should see 4 rows of data. Each row represents the name of a table in the schema:
+**Part B — Build progressively (30 min):**
 
-- `address`
-- `car`
-- `claim`
-- `client`
-
-If you want to see more details, run:
-
+1. INNER JOIN `claim` and `car` on `car_id`:
 ```sql
-SHOW ALL TABLES;
+SELECT c.id, c.claim_date, c.claim_amt, car.make, car.model
+FROM claim c
+INNER JOIN car ON c.car_id = car.id;
 ```
 
-To view the schema of an individual table, use the `DESCRIBE` command.
+2. LEFT JOIN `client` to see all clients even without claims.
 
+3. Build a master report joining all 4 tables (claim → car → client → address).
+
+4. Use UNION to combine `claim_date` from two different year-ranges.
+
+**Discussion Questions:**
+- "Which clients have never made a claim? Which JOIN type surfaces this?"
+- "What does a NULL `claim_amt` mean after a LEFT JOIN?"
+
+### 💬 Q&A & Reflection (10 min)
+
+- **Common Misconception:** "I can use `WHERE table_a.id = table_b.id` instead of JOIN." → This works for INNER JOINs only. You cannot replicate LEFT/RIGHT/FULL JOINs with WHERE clauses.
+- **Business Case:** Every business intelligence dashboard at companies like Salesforce, SAP, and Oracle runs on multi-table JOINs. A single dashboard query might join 8–12 tables simultaneously.
+
+---
+
+## 🏃 Part 2: Window Functions (55 min)
+
+### 🎯 Learning Objective
+Apply Window Functions (`SUM OVER`, `RANK OVER`) to perform running totals, rankings, and comparisons without collapsing rows.
+
+### 📖 Theory Recap (10 min)
+
+**Analogy:** `GROUP BY` collapses your data — like averaging exam scores by class, you lose individual results. Window functions are like adding a class-average column *next to* each student's score — the detail stays, but you gain the group context.
+
+**Anatomy of a window function:**
 ```sql
-DESCRIBE address;
-```
-
-You should see the column names and data types.
-
-**Exercise 1:** 
-
-- Describe the other 3 tables. Study their column names and data types.
-
-#### Summarize tables
-
-You can use the `SUMMARIZE` command to launch a query that computes a number of aggregates over all columns (of a table or query), including min, max, avg, std and approx_unique.
-
-```sql
-SUMMARIZE address;
-```
-
->In practice, the output typically includes:
->
-> - For numeric columns (like `id`), it shows stats such as `min`, `max`, `avg`, `stddev`, and `approx_unique` (estimated distinct count). 
-> - For text columns (like `country`, `state`, `city`), it usually skips numeric-only stats but still gives `min`/`max` (lexicographically) and `approx_unique`, so you can see “how many different values” appear in that column. 
-
-**Exercise 2:** 
-
-- Summarize the other 3 tables. Study their min, max, approx_unique, avg and std (if applicable).
-
-#### Joins and Unions
-
-Joins are used to combine data from multiple tables. They are useful when you want to query data that is spread across multiple tables. You can join tables based on a common column, usually the _primary key_ of one table and the _foreign key_ of another table.
-
-Let's look at the ERD of the database:
-
-```dbml
-Table claim {
-  id int [pk]
-  claim_date varchar
-  travel_time int
-  claim_amt int
-  motor_vehicle_record int
-  car_id int
-  client_id int
-}
-
-Table car {
-  id int [pk]
-  resale_value int
-  car_type varchar
-  car_use varchar
-  car_manufacture_year int
-}
-
-Table client {
-  id int [pk]
-  first_name varchar
-  last_name varchar
-  email varchar
-  phone varchar
-  birth_year int
-  education varchar
-  gender varchar
-  home_value int
-  home_kids int
-  income int
-  kids_drive int
-  marriage_status varchar
-  occupation varchar
-  address_id int
-}
-
-Table address {
-  id int [pk]
-  country varchar
-  state varchar
-  city varchar
-}
-
-
-Ref: claim.car_id > car.id
-
-Ref: claim.client_id > client.id
-
-Ref: client.address_id > address.id
-```
-
-![ERD](./assets/erd.png)
-
-`car_id`, `client_id` and `address_id` are foreign keys.
-
-The 4 common types of joins are:
-
-- Inner join
-- Left join
-- Right join
-- Full (Outer) join
-
-An overview of the different types of joins:
-
-![Joins](./assets/join_types.png)
-
-#### Inner join
-
-An inner join returns only the rows that match in both tables.
-
-```sql
-SELECT *
-FROM claim
-INNER JOIN car ON claim.car_id = car.id;
-```
-
-You can also use the `JOIN` keyword instead of `INNER JOIN`. They are the same. But it's good practice to use `INNER JOIN` to make your query more readable.
-
-> Inner join claim and client.
->
-> Inner join client and address.
-
-#### Left join
-
-A left join returns all the rows from the left table, and the matching rows from the right table.
-
-```sql
-SELECT *
-FROM claim
-LEFT JOIN car ON claim.car_id = car.id;
-```
-
-#### Right join
-
-A right join returns all the rows from the right table, and the matching rows from the left table.
-
-```sql
-SELECT *
-FROM claim
-RIGHT JOIN car ON claim.car_id = car.id;
-```
-
-#### Full (outer) join
-
-A full join returns all the rows from both tables.
-
-```sql
-SELECT *
-FROM claim
-FULL JOIN car ON claim.car_id = car.id;
-```
-> Return a joined table containing `id, claim_date, travel_time, claim_amt` from claim, `car_type, car_use` from car, `first_name, last_name` from client and `state, city` from address.
-
-
-#### Union
-
-A union combines the results of two or more tables or queries into a single result set. The queries must have the same number of columns and compatible data types.
-
-![Joins](./assets/join_vs_union.png)
-
-It is not useful for this database, but assuming we have an employees table with the following columns:
-
-- id
-- name
-- email
-- phone
-
-And a contractors table with the same columns. We can use a union to combine the two tables: 
-**Note: the following code is to show the syntax only**
-
-```sql
-SELECT *
-FROM employees
-UNION
-SELECT *
-FROM contractors;
-```
-
-`UNION` removes duplicate rows. If you want to keep duplicate rows, use `UNION ALL` instead.
-
-**Questions:** "If I SUMMARIZE the claim table and see a max(claim_amt) that is 10x higher than the average, what does that tell you about our insurance risk?"
-
-**Exercise 3:**
-
-- Create a master report of every claim. Include the client's name, their car type, and the city they live in.  
-- Hint: You will need to join 4 tables.  
-
-<details>
-
-  <summary>Solution for Exercise 3</summary>
-  
-```sql
--- Solution for Master Report  
-SELECT   
-    cl.id, cl.claim_date, cl.claim_amt,  
-    c.car_type,  
-    cli.first_name, cli.last_name,  
-    a.city, a.state  
-FROM claim cl  
-INNER JOIN car c ON cl.car_id = c.id  
-INNER JOIN client cli ON cl.client_id = cli.id  
-INNER JOIN address a ON cli.address_id = a.id;  
-```
-</details>
-
-
-### **Q\&A / Reflection**
-
-**Anticipated Hurdle:** Learners often struggle with "Which table is Left?".  
-
-**Solution:** Always think of the "Primary Subject" as the Left table.  
-
-**Business Case:** How would a "Full Outer Join" help us find cars that have never been claimed AND claims that (erroneously) don't have a car attached?
-
-
-## **Part 2: The Moving Window (Window Functions)**
-
-### **Learning Objectives**
-
-* Calculate running totals and rankings without losing row detail.
-
-### **Theory Recap**
-
-The Analogy:
-A standard GROUP BY is like asking, “What is the average height of this class?” and only writing down one line: “Class average height is 1.73 m.” You no longer see any individual students.
-
-A window function is like keeping every student in the list, but adding extra notes beside each one, such as “class average height is 1.73 m” or “you are the 2nd tallest in your class,” while all the original student rows stay visible.
-
-### **Workshop**
-
-#### Window functions
-
-**Window functions** let you look at a row *together with* other rows in the same “window” (for example, all claims for the same car, ordered by date), while still keeping every original row in the result.  
-Instead of collapsing rows like `GROUP BY` does, a window function adds extra calculated columns on top of the detail table. In this lesson, we use them to:
-
-- calculate a **running total** of `claim_amt` over time, and  
-- assign a **rank** to each claim within a car (e.g., largest claim per `car_id`).  
-  These are sometimes called **analytic** functions because they help you analyse patterns (totals, rankings, averages) without losing row-level detail.
-
-#### Running total
-
-#### A running total is a cumulative sum: each row shows the sum of all rows from the start (of the table or group) up to that row, in a defined order. 
-
-Core idea with numbers
-
-Imagine claim amounts for one car, ordered by claim date:
-
-#### 
-
-| row | claim\_amt | running\_total explanation |
-| ----: | ----: | :---- |
-| 1 | 100 | 100 (just this row) |
-| 2 | 50 | 100 \+ 50 \= 150 |
-| 3 | 200 | 100 \+ 50 \+ 200 \= 350 |
-| 4 | 25 | 100 \+ 50 \+ 200 \+ 25 \= 375 |
-
-#### 
-
-#### The running total at each row is “sum of this row and all previous rows, in order.” 
-
-You can use the `SUM` window function to compute the running total of a column. The `SUM` window function takes a column as input, and returns the sum of the column values in the current row and all previous rows.
-
-```sql
-SELECT
-  id, claim_amt,
-  SUM(claim_amt) OVER (ORDER BY id) AS running_total
-FROM claim;
-```
-
-The `OVER` clause defines the window. The `ORDER BY` clause defines the order of the rows in the window. The `SUM` window function computes the running total of the `claim_amt` column.
-
-`PARTITION BY` can be used to define the groups in the window. For example, if we want to compute the running total of the `claim_amt` column for each `car_id`:
-
-```sql
-SELECT
-  id, car_id, claim_amt,
-  SUM(claim_amt) OVER (PARTITION BY car_id ORDER BY id) AS running_total
-FROM claim;
-```
-
-> Return a table containing `id, car_id, claim_amt, running_total` from claim, where `running_total` is the running sum of the `claim_amt` column for each `car_id`.
-
-**Exercise 4:**  
-
-- Calculate a running total of insurance payouts over time (ordered by claim_date).  
-
-<details>
-
-  <summary>Solution for Exercise 4</summary>
-  
-```sql
-SELECT   
-    claim_date, claim_amt,  
-    SUM(claim_amt) OVER (ORDER BY claim_date) AS running_total  
-FROM claim;  
-```
-</details>
-
-
-
-#### Rank
-
-`RANK()` is a window function that gives each row a position (1st, 2nd, 3rd, …) within a group, allowing **ties** to share the same rank and leaving gaps after ties.
-
-#### Core idea in one example
-
-Say you have car claims:
-
-| claim\_id | car\_id | claim\_amt |
-| ----: | ----: | ----: |
-| 1 | A | 1000 |
-| 2 | A | 800 |
-| 3 | A | 800 |
-| 4 | A | 500 |
-
-Query:
-
-```sql
-SELECT
-  claim_id,
-  car_id,
-  claim_amt,
-  RANK() OVER (
-    PARTITION BY car_id
-    ORDER BY claim_amt DESC
-  ) AS amt_rank
-FROM claim;
-```
-
-Result:
-
-| claim\_id | car\_id | claim\_amt | amt\_rank |
-| ----: | ----: | ----: | ----: |
-| 1 | A | 1000 | 1 |
-| 2 | A | 800 | 2 |
-| 3 | A | 800 | 2 |
-| 4 | A | 500 | 4 |
-
-- The two 800‑amount claims tie, so both get rank 2\.  
-- Because there are two rows tied at rank 2, the next rank is 4, not 3 (there is a “gap”). 
-
-
-
-You can use the `RANK` window function to compute the rank of a row. The `RANK` window function takes a column as input, and returns the rank of the column value in the current row.
-
-```sql
-SELECT
-  id, car_id, claim_amt,
-  RANK() OVER (PARTITION BY car_id ORDER BY claim_amt DESC) AS rank
-FROM claim;
-```
-
-The `OVER` clause defines the window. The `PARTITION BY` clause defines the groups in the window. The `ORDER BY` clause defines the order of the rows in the window. The `RANK` window function computes the rank of the `claim_amt` column. It gives the same rank to rows with the same column value (`claim_amt`).
-
-To return a different rank for each row, use the `ROW_NUMBER` window function instead.
-
-> Return a table containing `id, car_id, travel_time, rank` from claim, where `rank` is the rank of the `travel_time` in descending order for each `car_id`.
-
-
-#### Qualify
-
-The `QUALIFY` clause is used to filter rows in a window. It is useful when you want to filter rows based on the result of a window function. For example, if we want to return the rows with a rank of 1:
-
-"Let's find our 'Heavy Hitters'. Who has the highest claims per car category?"
-
-```sql
-
--- The Ranking Window  
-SELECT
-  cl.id,
-  c.car_type,
-  cl.claim_amt,
-  RANK() OVER (
-    PARTITION BY car_type
-    ORDER BY
-      claim_amt DESC
-  ) AS rank
-FROM
-  claim cl
-  JOIN car c ON cl.car_id = c.id
-QUALIFY rank = 1
-ORDER BY
-  cl.claim_amt DESC; 
-```
-
-
-## **Part 3: Nested Logic (Subqueries & CTEs)**
-
-### **Learning Objectives**
-
-* Simplify complex logic using Common Table Expressions (CTEs).
-
-### **Theory Recap**
-
-The Analogy:  
-A Subquery is like a "thought within a thought."  
-A CTE (Common Table Expression) is like writing down a recipe step before you start cooking. It makes the code readable for humans, not just machines.
-
-### **Workshop**
-
-#### Subqueries
-
-A subquery is a query nested inside another query. It is useful when you want to use the result of a query as input to another query.
-
-For example, if we want to find the cars that have been involved in a claim:
-
-```sql
-SELECT id, resale_value, car_type
-FROM car
-WHERE id IN (
-  SELECT DISTINCT car_id
-  FROM claim
-);
-```
-
-#### Correlated subquery
-
-A correlated subquery is a subquery that references a column from the outer query. It is useful when you want to use the result of a query as input to another query, and the inner query depends on the outer query. The subquery is evaluated once for each row processed by the outer query.
-
-For example, if we want to find the cars that have been involved in a claim, and the claim amount is greater than 10% of the car's resale value:
-
-```sql
-SELECT id, resale_value, car_type
-FROM car c
-WHERE id IN (
-  SELECT DISTINCT car_id
-  FROM claim
-  WHERE claim_amt > 0.1 * c.resale_value
-);
-```
-
-You can use the `EXISTS` operator to check if a subquery returns any rows. It is useful when you want to check if a subquery returns any rows, and the result of the query doesn't matter.
-
-For example, if we want to find the cars that have been involved in a claim:
-
-```sql
-SELECT id, resale_value, car_type
-FROM car c1
-WHERE EXISTS (
-  SELECT DISTINCT car_id
-  FROM claim c2
-  WHERE c2.car_id = c1.id
-);
-```
-
-The `EXISTS` operator returns true if the subquery returns any rows, and false otherwise.
-
-#### Subquery in FROM
-
-A subquery in the `FROM` clause is called a derived table. It is useful when you want to use the result of a query as a table.
-
-For example, if we want to find the cars that have been involved in a claim, and the car resale value is less than the average resale value for the car type:
-
-```sql
-SELECT id, resale_value, c1.car_type
-FROM car c1
-INNER JOIN (
-  SELECT car_type, AVG(resale_value) AS average_resale_value
-  FROM car
-  GROUP BY car_type
-) c2 ON c1.car_type = c2.car_type
-WHERE resale_value < average_resale_value;
-```
-
-The derived table is useful when you want to use the result of a query as a table.
-
-> Return a table containing `id, resale_value, car_use` from car, where the car resale value is less than the average resale value for the car use.
-
-#### Common Table Expressions
-
-A common table expression (CTE) is a named subquery. It is useful when you want to use the result of a query as input to another query, and the subquery is used more than once. The CTE is evaluated once, and the result is stored in a temporary table. The temporary table can be referenced in the query.
-
-Using the same example as above:
-
-```sql
-WITH avg_resale_value_by_car_type AS (
-  SELECT car_type, AVG(resale_value) AS average_resale_value
-  FROM car
-  GROUP BY car_type
+function_name() OVER (
+    PARTITION BY group_column   -- "For each group..."
+    ORDER BY sort_column        -- "...in this order..."
 )
-SELECT id, resale_value, c1.car_type
-FROM car c1
-INNER JOIN avg_resale_value_by_car_type c2 ON c1.car_type = c2.car_type
-WHERE resale_value < average_resale_value;
 ```
 
-Let's find cars whose resale value is below the average for their specific type. It sounds complex, but we'll build it layer by layer.
+| Function | Purpose |
+|----------|---------|
+| `SUM() OVER (...)` | Running total within a partition |
+| `RANK() OVER (...)` | Rank within a partition (ties get same rank; gaps after) |
+| `ROW_NUMBER() OVER (...)` | Unique sequential number regardless of ties |
+| `QUALIFY` | Filter on window function results |
 
+### 🛠️ Hands-On Activity: "The Risk Analyser" (35 min)
+
+1. **Running total of claims per car:**
 ```sql
--- The CTE Approach (Clean and Readable)  
-WITH AvgValues AS (  
-    SELECT car_type, AVG(resale_value) as avg_resale  
-    FROM car  
-    GROUP BY car_type  
-)  
-SELECT c.id, c.car_type, c.resale_value, a.avg_resale  
-FROM car c  
-JOIN AvgValues a ON c.car_type = a.car_type  
-WHERE c.resale_value < a.avg_resale;
+SELECT id, car_id, claim_date, claim_amt,
+       SUM(claim_amt) OVER (PARTITION BY car_id ORDER BY claim_date) AS running_total
+FROM claim;
 ```
 
-**Exercise 5:**  
-
-- Find clients who have made claims that are more than 50% of their annual income. Use a CTE to calculate the total claims per client first.
-
-
-<details>
-
-  <summary>Solution for Exercise 5</summary>
-  
+2. **Rank clients by total claim amount within their state:**
 ```sql
-WITH TotalClaimsPerClient AS (
-  SELECT
-    client_id,
-    SUM(claim_amt) AS total_claims
-  FROM claim
-  GROUP BY client_id
+SELECT cl.name, a.state, SUM(c.claim_amt) AS total_claimed,
+       RANK() OVER (PARTITION BY a.state ORDER BY SUM(c.claim_amt) DESC) AS state_rank
+FROM claim c
+JOIN car ON c.car_id = car.id
+JOIN client cl ON car.client_id = cl.id
+JOIN address a ON cl.address_id = a.id
+GROUP BY cl.name, a.state;
+```
+
+3. **Use QUALIFY to find the top-claiming client per state:**
+```sql
+-- Add: QUALIFY state_rank = 1
+```
+
+**Discussion Questions:**
+- "What happens to the running total when you remove `ORDER BY` from the window?"
+- "What's the difference between RANK() and ROW_NUMBER() when two clients have the same total?"
+
+### 💬 Q&A & Reflection (10 min)
+
+- **Common Misconception:** "I can filter window function results with WHERE." → Window functions are evaluated *after* WHERE. Use `QUALIFY` (DuckDB) or a subquery/CTE to filter on window results.
+- **Business Case:** Spotify uses window functions to compute "listening streaks" — a running count of consecutive days a user listened — to drive engagement notifications.
+
+---
+
+## 🏃 Part 3: Subqueries & CTEs (55 min)
+
+### 🎯 Learning Objective
+Write subqueries using `IN` and `EXISTS`, and structure complex multi-step queries using Common Table Expressions (CTEs) for readability.
+
+### 📖 Theory Recap (10 min)
+
+**Analogy:** A subquery is like a sticky note — quick, inline, but messy if overused. A CTE is like a whiteboard — you write the result once, name it, and reference it as many times as needed.
+
+| Technique | When to use | Readability |
+|-----------|------------|-------------|
+| **Subquery (WHERE IN)** | Simple filtering on aggregated result | Medium |
+| **Subquery (EXISTS)** | Check existence efficiently | Medium |
+| **Derived Table (FROM (...))** | Pre-filter before main query | Medium |
+| **CTE (WITH ...)** | Multi-step logic; reference the result multiple times | High ✅ |
+
+### 🛠️ Hands-On Activity: "The Insurance Auditor" (35 min)
+
+**Step 1 — Subquery with IN:**
+```sql
+-- Find cars with below-average resale value in their category
+SELECT * FROM car
+WHERE resale_value < (
+    SELECT AVG(resale_value) FROM car WHERE category = car.category
+);
+```
+
+**Step 2 — Build a 4-stage CTE pipeline:**
+```sql
+WITH
+market_avg AS (
+    SELECT category, AVG(resale_value) AS avg_resale
+    FROM car GROUP BY category
+),
+claim_totals AS (
+    SELECT car_id, SUM(claim_amt) AS total_claimed
+    FROM claim GROUP BY car_id
+),
+client_enriched AS (
+    SELECT cl.name, cl.id, a.state, ct.total_claimed
+    FROM claim_totals ct
+    JOIN car ON ct.car_id = car.id
+    JOIN client cl ON car.client_id = cl.id
+    JOIN address a ON cl.address_id = a.id
+),
+state_ranked AS (
+    SELECT *, RANK() OVER (PARTITION BY state ORDER BY total_claimed DESC) AS state_rank
+    FROM client_enriched
 )
-SELECT
-  c.id AS client_id,
-  c.income,
-  t.total_claims
-FROM client c
-JOIN TotalClaimsPerClient t
-  ON c.id = t.client_id
-WHERE t.total_claims > 0.5 * c.income;
+SELECT * FROM state_ranked WHERE state_rank <= 2;
 ```
 
-</details>
+**Discussion Questions:**
+- "Why is the CTE easier to debug than nesting all this as subqueries?"
+- "If you needed to use `claim_totals` in two different parts of the query, how would that change if you used a subquery vs. a CTE?"
 
+### 💬 Q&A & Reflection (10 min)
 
+- **Common Misconception:** "CTEs are faster than subqueries." → Not necessarily. CTEs are primarily a readability tool. Performance depends on the database engine's optimiser.
+- **Business Case:** Insurance companies like Allianz run exactly this type of CTE-based query daily — identifying top-claiming policyholders by region for fraud detection and risk-based pricing adjustments.
 
+---
 
-### **Q\&A / Reflection**
+## 🎯 Wrap-Up (5 min)
 
-**Reflection:** Why do developers prefer CTEs over Subqueries? (Answer: Readability and Debugging).
+### Key Takeaways
+1. **JOINs are the core of multi-table analysis.** INNER for matches only; LEFT to preserve your primary table. Know the difference before every query.
+2. **Window functions add context without losing rows** — they're the key to running totals, rankings, and percentiles.
+3. **CTEs are readability tools** — use them to break complex queries into named, logical steps that can be reviewed and debugged independently.
 
-## **Optional Topics for Self Study**
-
-* CROSS JOIN & SELF JOIN (Theoretical understanding).
-
-* UNION vs UNION ALL (Briefly touched upon if time permits).
-
-* Advanced SUMMARIZE statistics (std, approx_unique).
-
+### Next Steps
+- **Post-Class:** Complete the [Insurance Auditor Project](./post-class.md) — 3 targeted challenges + a multi-table CTE capstone (45–60 min).
+- **Next Lesson:** Lesson 1.6 transitions from SQL to Python, introducing NumPy as the numerical foundation for data science.
