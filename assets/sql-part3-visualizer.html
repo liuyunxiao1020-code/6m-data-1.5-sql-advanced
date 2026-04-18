@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Visualized — Nested Logic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,400;1,9..144,600&family=JetBrains+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2EDE0;
+    --paper: #FBF7EC;
+    --ink: #171512;
+    --ink-soft: #4A453B;
+    --rule: #1715121A;
+    --rule-strong: #17151238;
+
+    --claim: #C23A1C;
+    --claim-soft: #F7DBD1;
+    --car: #1F5E8B;
+    --car-soft: #D4E3EE;
+    --match: #4F7A2C;
+    --match-soft: #D9E6C6;
+    --accent: #C68A14;
+    --accent-soft: #F3E3B8;
+
+    --indigo: #4A2E6E;
+    --indigo-soft: #E3D9EC;
+    --amber: #A06510;
+    --amber-soft: #F0DDB8;
+    --null: #6B645A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Geist', -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.4;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 10% 20%, rgba(74, 46, 110, 0.06), transparent 40%),
+      radial-gradient(circle at 90% 70%, rgba(198, 138, 20, 0.06), transparent 50%);
+    padding: 28px 40px 60px;
+  }
+
+  /* ============ HEADER ============ */
+  header {
+    max-width: 1440px;
+    margin: 0 auto 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 24px;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-bottom: 18px;
+  }
+
+  .brand {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 44px;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+
+  .brand em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--indigo);
+  }
+
+  .subtitle {
+    font-size: 13px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 4px;
+    border-radius: 2px;
+  }
+
+  nav.tabs button {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    padding: 10px 18px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+  }
+
+  nav.tabs button:hover { color: var(--ink); }
+
+  nav.tabs button.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  main { max-width: 1440px; margin: 0 auto; }
+
+  section.panel { display: none; }
+  section.panel.active { display: block; }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 24px;
+    align-items: start;
+  }
+
+  .lesson-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .section-title em {
+    font-style: italic;
+    color: var(--indigo);
+  }
+  .section-title em.amber { color: var(--amber); }
+  .section-title em.claim { color: var(--claim); }
+
+  .explanation {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+    max-width: 540px;
+  }
+
+  /* ============ CONTROL BAR ============ */
+  .control-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper);
+    width: fit-content;
+  }
+
+  .control-bar button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 14px 22px;
+    border: none;
+    border-right: 1px solid var(--rule);
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+  }
+
+  .control-bar button:last-child { border-right: none; }
+  .control-bar button:hover { background: var(--bg); color: var(--ink); }
+  .control-bar button.active { background: var(--ink); color: var(--paper); }
+
+  /* ============ SQL BLOCK ============ */
+  .sql-block {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 18px 20px;
+    line-height: 1.65;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .sql-block .kw { color: #E6B85C; font-weight: 600; }
+  .sql-block .tbl { color: #7EB8E0; }
+  .sql-block .col { color: #F2EDE0; }
+  .sql-block .cmt { color: #8A8275; font-style: italic; }
+  .sql-block .str { color: #B8C97C; }
+  .sql-block .cte-name { color: #C9A3E8; font-weight: 600; }
+  .sql-block .num { color: #E6B85C; }
+
+  .sql-block .step-badge {
+    display: inline-block;
+    width: 18px; height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--amber);
+    color: var(--ink);
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 8px;
+    vertical-align: middle;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .sql-block .step-badge.w {
+    background: #5A5A5A;
+    color: var(--paper);
+  }
+
+  .sql-block .highlight-clause {
+    background: var(--amber);
+    color: var(--ink);
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-weight: 600;
+  }
+
+  /* ============ TEACHER NOTE ============ */
+  .teacher-note {
+    padding: 14px 18px;
+    background: #1715120A;
+    border-left: 3px solid var(--indigo);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.55;
+    min-height: 60px;
+    margin-top: 14px;
+  }
+  .teacher-note::before {
+    content: 'Talking point — ';
+    font-weight: 600;
+    font-style: normal;
+    font-family: 'Geist', sans-serif;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .teacher-note.amber { border-left-color: var(--amber); }
+  .teacher-note.amber::before { color: var(--amber); }
+
+  .insight-box {
+    padding: 16px 20px;
+    background: var(--indigo);
+    color: var(--paper);
+    margin-top: 14px;
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    line-height: 1.5;
+    position: relative;
+  }
+  .insight-box::before {
+    content: 'Key insight';
+    font-family: 'Geist', sans-serif;
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #C9A3E8;
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .insight-box strong { color: #F3E3B8; font-weight: 600; }
+
+  /* ============ EXECUTION ORDER ============ */
+  .exec-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-bottom: 30px;
+  }
+
+  .order-column {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 22px 24px;
+  }
+
+  .order-column h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .order-column .order-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .order-column.written h3 em { color: #6B645A; font-style: italic; }
+  .order-column.logical h3 em { color: var(--amber); font-style: italic; }
+
+  .order-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .order-list li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    border-bottom: 1px solid var(--rule);
+    transition: background-color 0.2s;
+  }
+
+  .order-list li:last-child { border-bottom: none; }
+
+  .order-list li:hover { background: var(--bg); }
+
+  .order-list li .num-badge {
+    display: inline-block;
+    width: 26px; height: 26px;
+    line-height: 26px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 11.5px;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .order-column.written .num-badge {
+    background: #E5DED0;
+    color: var(--ink-soft);
+  }
+
+  .order-column.logical .num-badge {
+    background: var(--amber);
+    color: var(--ink);
+  }
+
+  .order-list li .clause-name {
+    font-weight: 600;
+    color: var(--ink);
+    min-width: 90px;
+  }
+
+  .order-list li .clause-desc {
+    color: var(--ink-soft);
+    font-size: 12px;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .order-column.logical .order-list li.active {
+    background: var(--amber-soft);
+  }
+  .order-column.logical .order-list li.active .num-badge {
+    box-shadow: 0 0 0 3px var(--amber);
+  }
+
+  /* ============ EXEC STEPPER ============ */
+  .exec-stepper-wrap {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 24px;
+  }
+
+  .exec-stepper-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+  }
+
+  .exec-stepper-head h3 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 20px;
+  }
+
+  .exec-stepper-head .mono-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .exec-controls {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 20px;
+    flex-wrap: wrap;
+  }
+
+  .exec-controls button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 10px 14px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper);
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .exec-controls button.active,
+  .exec-controls button.passed {
+    background: var(--amber-soft);
+    color: var(--ink);
+    border-color: var(--amber);
+  }
+  .exec-controls button.active {
+    background: var(--amber);
+    font-weight: 700;
+  }
+
+  .exec-controls button .step-num {
+    display: inline-block;
+    width: 18px; height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'Geist', sans-serif;
+  }
+
+  .exec-controls button.active .step-num,
+  .exec-controls button.passed .step-num {
+    background: var(--ink);
+    color: var(--amber);
+  }
+
+  .exec-data-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 12px;
+    align-items: start;
+  }
+
+  .exec-sql {
+    overflow: hidden;
+  }
+
+  .exec-frame {
+    background: var(--bg);
+    border: 1px dashed var(--rule-strong);
+    padding: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    min-height: 200px;
+  }
+
+  .exec-frame .frame-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .data-table {
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 100%;
+  }
+
+  .data-table th {
+    font-weight: 500;
+    color: var(--ink-soft);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 7px 8px;
+    text-align: left;
+    border-bottom: 1.5px solid var(--ink);
+  }
+
+  .data-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .data-table tr.dropped td {
+    opacity: 0.3;
+    text-decoration: line-through;
+    text-decoration-color: var(--claim);
+  }
+
+  .data-table tr.pulse {
+    animation: pulseRow 0.6s ease;
+  }
+
+  @keyframes pulseRow {
+    0% { background: var(--amber); }
+    100% { background: transparent; }
+  }
+
+  /* ============ SUBQUERY / CTE STAGES ============ */
+  .nested-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    align-items: start;
+  }
+
+  .nested-visual {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 24px;
+  }
+
+  .nested-visual h3 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  /* Outer & Inner query boxes */
+  .query-box {
+    border: 2px solid var(--ink);
+    padding: 16px 18px;
+    background: var(--paper);
+    position: relative;
+    margin-bottom: 12px;
+  }
+
+  .query-box-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--paper);
+    padding: 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .query-box.outer { border-color: var(--claim); }
+  .query-box.outer .query-box-label { color: var(--claim); }
+  .query-box.inner { border-color: var(--indigo); border-style: dashed; }
+  .query-box.inner .query-box-label { color: var(--indigo); }
+  .query-box.cte { border-color: var(--amber); background: var(--amber-soft); }
+  .query-box.cte .query-box-label { color: var(--amber); background: var(--amber-soft); }
+
+  .query-sql {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .query-sql .kw { color: var(--amber); font-weight: 600; }
+  .query-sql .tbl { color: var(--car); }
+  .query-sql .cte-ref { color: var(--indigo); font-weight: 600; }
+
+  .nested-inner-box {
+    margin-left: 24px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* Vertical arrow between CTE → main */
+  .flow-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 8px 0;
+    color: var(--amber);
+  }
+
+  .flow-arrow::before {
+    content: '';
+    width: 2px;
+    height: 18px;
+    background: var(--amber);
+  }
+
+  .flow-arrow::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--amber);
+  }
+
+  .flow-arrow span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    background: var(--amber);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ============ CORRELATED SUBQUERY ANIMATION ============ */
+  .correlated-stage {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .iter-panel {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 20px;
+  }
+
+  .iter-heading {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .iter-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .iter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .iter-row.active {
+    background: var(--amber-soft);
+    border-color: var(--amber);
+    border-width: 2px;
+  }
+
+  .iter-row.kept {
+    border-left: 3px solid var(--match);
+  }
+
+  .iter-row.dropped {
+    border-left: 3px solid var(--claim);
+    opacity: 0.6;
+  }
+
+  .iter-row .iter-label {
+    font-weight: 600;
+    min-width: 60px;
+  }
+
+  .iter-row .iter-verdict {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .iter-row.kept .iter-verdict { color: var(--match); }
+  .iter-row.dropped .iter-verdict { color: var(--claim); }
+
+  .inner-fire-panel {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 20px;
+    min-height: 280px;
+  }
+
+  .fire-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--rule-strong);
+  }
+
+  .fire-counter .count {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: 48px;
+    color: var(--claim);
+    line-height: 0.9;
+  }
+  .fire-counter .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .fire-substitution {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    padding: 12px;
+    background: var(--bg);
+    border-left: 3px solid var(--indigo);
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+
+  .fire-substitution .sub {
+    background: var(--amber);
+    padding: 1px 5px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .fire-result {
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .fire-result-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .play-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .play-controls button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 9px 16px;
+    border: 1px solid var(--rule-strong);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+  .play-controls button:hover { background: var(--bg); }
+  .play-controls button.primary { background: var(--indigo); color: var(--paper); border-color: var(--indigo); }
+
+  /* ============ CTE CHAIN ============ */
+  .cte-chain {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .cte-chain .query-box {
+    transition: all 0.3s;
+  }
+
+  .cte-virtual-table {
+    margin-top: 10px;
+    background: var(--paper);
+    border: 1px solid var(--amber);
+    padding: 10px;
+  }
+
+  .cte-virtual-table .vt-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--amber);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  /* ============ DECISION TREE / WHEN TO USE ============ */
+  .decision-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+  }
+
+  .tree-panel, .rules-panel {
+    background: var(--paper);
+    border: 1px solid var(--rule-strong);
+    padding: 28px;
+  }
+
+  .tree-panel h3, .rules-panel h3 {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+
+  .decision-node {
+    background: var(--bg);
+    border: 1.5px solid var(--rule-strong);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+  }
+  .decision-node strong {
+    font-style: normal;
+    font-weight: 600;
+    font-family: 'Geist', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--indigo);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .decision-branches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+    margin-left: 20px;
+  }
+
+  .decision-leaf {
+    padding: 12px 14px;
+    font-size: 12.5px;
+    font-family: 'JetBrains Mono', monospace;
+    border-left: 3px solid;
+  }
+
+  .decision-leaf.cte {
+    background: var(--amber-soft);
+    border-left-color: var(--amber);
+  }
+  .decision-leaf.sub {
+    background: var(--indigo-soft);
+    border-left-color: var(--indigo);
+  }
+  .decision-leaf.match {
+    background: var(--match-soft);
+    border-left-color: var(--match);
+  }
+
+  .decision-leaf .leaf-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 4px;
+    font-family: 'Geist', sans-serif;
+  }
+  .decision-leaf.cte .leaf-label { color: var(--amber); }
+  .decision-leaf.sub .leaf-label { color: var(--indigo); }
+
+  .rule-card {
+    padding: 14px 16px;
+    border-top: 1px solid var(--rule-strong);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .rule-card:first-of-type { border-top: none; padding-top: 0; }
+  .rule-card:last-of-type { padding-bottom: 0; }
+
+  .rule-card .rule-q {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .rule-card .rule-a {
+    font-family: 'Geist', sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+  .rule-card .rule-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    padding: 4px 8px;
+    white-space: nowrap;
+    align-self: start;
+  }
+  .rule-tag.cte { background: var(--amber-soft); color: var(--amber); }
+  .rule-tag.sub { background: var(--indigo-soft); color: var(--indigo); }
+  .rule-tag.either { background: var(--match-soft); color: var(--match); }
+  .rule-tag.recursive { background: var(--claim-soft); color: var(--claim); }
+
+  /* ============ FOOTER ============ */
+  .foot {
+    max-width: 1440px;
+    margin: 30px auto 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 1100px) {
+    .exec-stage, .exec-data-wrap, .nested-stage, .correlated-stage, .decision-wrap {
+      grid-template-columns: 1fr;
+    }
+    body { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">SQL <em>Nested Logic</em></div>
+    <div class="subtitle">Lesson 1.5 · Part 3 — Subqueries, CTEs &amp; Execution Order</div>
+  </div>
+  <nav class="tabs">
+    <button data-tab="exec" class="active">Execution Order</button>
+    <button data-tab="sub">Subqueries</button>
+    <button data-tab="cte">CTEs</button>
+    <button data-tab="choose">When to Use Which</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ============================================================
+       TAB 1 — EXECUTION ORDER
+       ============================================================ -->
+  <section id="panel-exec" class="panel active">
+
+    <div class="section-head">
+      <div>
+        <div class="lesson-label">Bonus concept — The invisible engine</div>
+        <h2 class="section-title">The order you <em class="amber">write</em> it is not the order it <em class="amber">runs</em>.</h2>
+      </div>
+      <p class="explanation">
+        Before we look at nested queries, one thing that explains everything after it:
+        SQL is written top-down but the database evaluates it in a different order.
+        Understanding this order is what makes subqueries, CTEs, and window functions click.
+      </p>
+    </div>
+
+    <div class="exec-stage">
+      <div class="order-column written">
+        <h3>Written <em>order</em></h3>
+        <div class="order-note">What you type, top to bottom</div>
+        <ul class="order-list" id="writtenList">
+          <li><span class="num-badge">1</span><span class="clause-name">SELECT</span><span class="clause-desc">pick columns</span></li>
+          <li><span class="num-badge">2</span><span class="clause-name">FROM</span><span class="clause-desc">which tables</span></li>
+          <li><span class="num-badge">3</span><span class="clause-name">WHERE</span><span class="clause-desc">filter rows</span></li>
+          <li><span class="num-badge">4</span><span class="clause-name">GROUP BY</span><span class="clause-desc">collapse into groups</span></li>
+          <li><span class="num-badge">5</span><span class="clause-name">HAVING</span><span class="clause-desc">filter groups</span></li>
+          <li><span class="num-badge">6</span><span class="clause-name">ORDER BY</span><span class="clause-desc">sort results</span></li>
+          <li><span class="num-badge">7</span><span class="clause-name">LIMIT</span><span class="clause-desc">cap row count</span></li>
+        </ul>
+      </div>
+
+      <div class="order-column logical">
+        <h3>Logical <em>order</em></h3>
+        <div class="order-note">What the database actually runs</div>
+        <ul class="order-list" id="logicalList">
+          <li data-step="1"><span class="num-badge">1</span><span class="clause-name">FROM</span><span class="clause-desc">load the rows</span></li>
+          <li data-step="2"><span class="num-badge">2</span><span class="clause-name">WHERE</span><span class="clause-desc">drop rows that fail the filter</span></li>
+          <li data-step="3"><span class="num-badge">3</span><span class="clause-name">GROUP BY</span><span class="clause-desc">collapse into buckets</span></li>
+          <li data-step="4"><span class="num-badge">4</span><span class="clause-name">HAVING</span><span class="clause-desc">drop buckets that fail the filter</span></li>
+          <li data-step="5"><span class="num-badge">5</span><span class="clause-name">SELECT</span><span class="clause-desc">compute output columns</span></li>
+          <li data-step="6"><span class="num-badge">6</span><span class="clause-name">ORDER BY</span><span class="clause-desc">sort the output</span></li>
+          <li data-step="7"><span class="num-badge">7</span><span class="clause-name">LIMIT</span><span class="clause-desc">return top N</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      This is why you <strong>cannot</strong> reference a SELECT alias inside WHERE — WHERE runs before SELECT exists.
+      But you <strong>can</strong> reference it inside ORDER BY, which runs after. Try it on the right.
+    </div>
+
+    <div class="exec-stepper-wrap" style="margin-top:28px">
+      <div class="exec-stepper-head">
+        <h3>Watch a query <span style="font-family:JetBrains Mono;font-style:normal;font-size:14px;color:var(--ink-soft)">execute in logical order</span></h3>
+        <div class="mono-note">Click a step · or press space to play</div>
+      </div>
+
+      <div class="exec-controls" id="execStepButtons">
+        <button data-step="1" class="active"><span class="step-num">1</span>FROM</button>
+        <button data-step="2"><span class="step-num">2</span>WHERE</button>
+        <button data-step="3"><span class="step-num">3</span>GROUP&nbsp;BY</button>
+        <button data-step="4"><span class="step-num">4</span>HAVING</button>
+        <button data-step="5"><span class="step-num">5</span>SELECT</button>
+        <button data-step="6"><span class="step-num">6</span>ORDER&nbsp;BY</button>
+      </div>
+
+      <div class="exec-data-wrap">
+        <div class="exec-sql">
+          <div class="sql-block" id="execSql"></div>
+          <div class="teacher-note amber" id="execNote"></div>
+        </div>
+        <div class="exec-frame">
+          <div class="frame-label">
+            <span>Data after step <span id="execStepNum">1</span></span>
+            <span id="execRowCount">— rows</span>
+          </div>
+          <div id="execData"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       TAB 2 — SUBQUERIES
+       ============================================================ -->
+  <section id="panel-sub" class="panel">
+
+    <div class="section-head">
+      <div>
+        <div class="lesson-label">Part 3 — Nested Logic · Subqueries</div>
+        <h2 class="section-title">A query <em class="claim">inside</em> another query.</h2>
+      </div>
+      <p class="explanation">
+        A subquery is a SELECT statement nested inside another. The inner query runs first
+        (or, if correlated, runs <em>once per outer row</em>), and its result flows into the outer query.
+        Three flavours below, in the order you'll meet them most.
+      </p>
+    </div>
+
+    <div class="control-bar" id="subControls">
+      <button data-sub="in" class="active">IN — Non-correlated</button>
+      <button data-sub="correlated">Correlated — fires per row</button>
+      <button data-sub="derived">Derived Table — FROM (...)</button>
+    </div>
+
+    <div id="subBody"></div>
+  </section>
+
+  <!-- ============================================================
+       TAB 3 — CTEs
+       ============================================================ -->
+  <section id="panel-cte" class="panel">
+
+    <div class="section-head">
+      <div>
+        <div class="lesson-label">Part 3 — Nested Logic · CTEs</div>
+        <h2 class="section-title">Name it once, <em>use it like a table</em>.</h2>
+      </div>
+      <p class="explanation">
+        A CTE (Common Table Expression) is a named temporary result defined with
+        <code style="font-family:'JetBrains Mono',monospace;background:#1715120F;padding:2px 6px">WITH name AS (...)</code>
+        at the top of your query. It computes once, gets a name, and the main query references it like any table.
+        Same power as a subquery, vastly more readable once logic stacks up.
+      </p>
+    </div>
+
+    <div class="control-bar" id="cteControls">
+      <button data-cte="single" class="active">Single CTE</button>
+      <button data-cte="multi">Multiple CTEs</button>
+      <button data-cte="chain">CTE that uses a CTE</button>
+      <button data-cte="vs">CTE vs Subquery — same result</button>
+    </div>
+
+    <div id="cteBody"></div>
+  </section>
+
+  <!-- ============================================================
+       TAB 4 — WHEN TO USE WHICH
+       ============================================================ -->
+  <section id="panel-choose" class="panel">
+
+    <div class="section-head">
+      <div>
+        <div class="lesson-label">Mental model — Reach for the right tool</div>
+        <h2 class="section-title">Which one, <em class="amber">and when?</em></h2>
+      </div>
+      <p class="explanation">
+        Both can solve the same problem. The question is readability, reuse, and whether your logic
+        needs the outer row's values. Use this as a quick decision flow and a rule-of-thumb cheatsheet.
+      </p>
+    </div>
+
+    <div class="decision-wrap">
+      <div class="tree-panel">
+        <h3>Decision flow</h3>
+
+        <div class="decision-node">
+          <strong>Start here</strong>
+          Do I need to reference the intermediate result more than once in the same query?
+        </div>
+        <div class="decision-branches">
+          <div class="decision-leaf cte">
+            <div class="leaf-label">Yes → CTE</div>
+            A subquery would force you to write the same block twice.
+            CTEs let you define once and reference by name anywhere below.
+          </div>
+          <div class="decision-leaf sub">
+            <div class="leaf-label">No → keep reading</div>
+            Either tool works. Let the next question decide.
+          </div>
+        </div>
+
+        <div class="decision-node">
+          <strong>Next</strong>
+          Does the inner logic need values from the outer row?
+        </div>
+        <div class="decision-branches">
+          <div class="decision-leaf sub">
+            <div class="leaf-label">Yes → Correlated subquery</div>
+            Only subqueries can reference the outer row.
+            Heads up: fires once per outer row, so watch performance.
+          </div>
+          <div class="decision-leaf match">
+            <div class="leaf-label">No → next question</div>
+          </div>
+        </div>
+
+        <div class="decision-node">
+          <strong>Next</strong>
+          Is the inner logic more than 4–5 lines, or would it confuse someone reading at a glance?
+        </div>
+        <div class="decision-branches">
+          <div class="decision-leaf cte">
+            <div class="leaf-label">Yes → CTE</div>
+            Naming the step beats nesting it. "WITH active_clients AS (...)"
+            reads like a sentence.
+          </div>
+          <div class="decision-leaf sub">
+            <div class="leaf-label">No → Subquery is fine</div>
+            Small IN(...) or scalar subqueries are perfectly readable inline.
+          </div>
+        </div>
+
+        <div class="decision-node" style="border-color: var(--claim); background: var(--claim-soft)">
+          <strong style="color:var(--claim)">Special case</strong>
+          Is it hierarchical or recursive data (org charts, threads, tree walks)?
+        </div>
+        <div class="decision-branches">
+          <div class="decision-leaf" style="background: var(--claim-soft); border-left-color: var(--claim); color: var(--claim)">
+            <div class="leaf-label" style="color: var(--claim)">Must use recursive CTE</div>
+            Subqueries cannot recurse. Only <code style="font-family:JetBrains Mono">WITH RECURSIVE ...</code> can walk a tree.
+          </div>
+        </div>
+      </div>
+
+      <div class="rules-panel">
+        <h3>Rule-of-thumb cheatsheet</h3>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"Does this row's column exist in another table?"</div>
+            <div class="rule-a">Quick existence check — use <code style="font-family:JetBrains Mono">IN (...)</code> or <code style="font-family:JetBrains Mono">EXISTS (...)</code> inline.</div>
+          </div>
+          <div class="rule-tag sub">Subquery</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"I need a single value computed from another query."</div>
+            <div class="rule-a">Scalar subquery in SELECT or WHERE — keep it short.</div>
+          </div>
+          <div class="rule-tag sub">Subquery</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"The filter depends on the current row's values."</div>
+            <div class="rule-a">Correlated subquery is the only way. Expect it to fire once per outer row.</div>
+          </div>
+          <div class="rule-tag sub">Correlated</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"My query has three distinct logical steps, and the middle step is reused."</div>
+            <div class="rule-a">Each step becomes a CTE. Reads like an outline — far easier to code-review.</div>
+          </div>
+          <div class="rule-tag cte">CTE</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"I want to compute aggregates, then filter on the aggregate, then join again."</div>
+            <div class="rule-a">Two CTEs in sequence. Nesting three subqueries is readable by no one.</div>
+          </div>
+          <div class="rule-tag cte">CTE</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"I'm walking a hierarchy — employees, folders, categories."</div>
+            <div class="rule-a">Only <code style="font-family:JetBrains Mono">WITH RECURSIVE</code> can self-reference. Subqueries can't.</div>
+          </div>
+          <div class="rule-tag recursive">Recursive CTE</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"A quick inline filter — two lines at most."</div>
+            <div class="rule-a">Subquery. A CTE for something trivial is overkill.</div>
+          </div>
+          <div class="rule-tag sub">Subquery</div>
+        </div>
+
+        <div class="rule-card">
+          <div>
+            <div class="rule-q">"I have to send this query to a teammate in two hours."</div>
+            <div class="rule-a">Default to CTEs. Named steps age better than nested selects.</div>
+          </div>
+          <div class="rule-tag cte">CTE</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="teacher-note" style="margin-top:20px; border-left-color: var(--amber)">
+      The honest answer in the industry: most analysts default to CTEs for anything beyond trivial,
+      because they age better and review faster. Subqueries are still the right call for tiny
+      inline checks (<code style="font-family:'JetBrains Mono',monospace">WHERE id IN (SELECT...)</code>)
+      and for correlated logic (which CTEs can't express). Knowing both means you can read anyone's code.
+    </div>
+  </section>
+
+</main>
+
+<div class="foot">
+  <span>Unit 1.5 · Part 3 · DuckDB</span>
+  <span id="footStatus">E · S · C · W to swap tab · 1–4 to pick variant · space = play</span>
+</div>
+
+<script>
+/* ============================================================
+   SAME DATASET as Parts 1–2 for continuity
+   ============================================================ */
+const CLAIMS = [
+  { id: 1, date: '2024-01-05', amt: 1000, car_id: 101 },
+  { id: 2, date: '2024-01-12', amt:  800, car_id: 101 },
+  { id: 3, date: '2024-02-03', amt:  500, car_id: 102 },
+  { id: 4, date: '2024-02-20', amt: 1200, car_id: 103 },
+  { id: 5, date: '2024-03-15', amt:  800, car_id: 101 },
+  { id: 6, date: '2024-03-28', amt:  300, car_id: null },
+];
+
+const CARS = [
+  { id: 101, type: 'Sedan',   resale: 15000 },
+  { id: 102, type: 'SUV',     resale: 22000 },
+  { id: 103, type: 'Sports',  resale: 35000 },
+  { id: 104, type: 'Minivan', resale: 18000 },
+];
+
+/* ============================================================
+   TAB SWITCHING
+   ============================================================ */
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('section.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.add('active');
+  });
+});
+
+/* ============================================================
+   EXECUTION ORDER — interactive stepper
+   ============================================================ */
+
+const EXEC_NOTES = {
+  1: 'Start: the full claim table is loaded into memory. 6 rows. Nothing has been filtered or aggregated yet.',
+  2: 'WHERE drops individual rows before any grouping happens. Claim #6 (amt $300) fails the filter and is dropped. 5 rows remain.',
+  3: 'GROUP BY collapses the remaining rows into buckets — one bucket per car_id. Individual claim rows no longer exist; only the aggregates do.',
+  4: 'HAVING is WHERE for groups. It filters buckets (not rows). Car 102 — total $500 — fails HAVING and its bucket is dropped.',
+  5: 'Only now does SELECT run. This is when aliases like "total" are created. Until this moment, "total" did not exist — which is why WHERE cannot see it.',
+  6: 'ORDER BY sorts the final output. Because it runs AFTER SELECT, it CAN reference aliases like "total".',
+};
+
+function renderExecSql(activeStep) {
+  const clauses = [
+    { n: 5, name: 'SELECT', body: 'car_id, SUM(claim_amt) <span class="kw">AS</span> total' },
+    { n: 1, name: 'FROM',   body: '<span class="tbl">claim</span>' },
+    { n: 2, name: 'WHERE',  body: 'claim_amt &gt; 400' },
+    { n: 3, name: 'GROUP BY', body: 'car_id' },
+    { n: 4, name: 'HAVING', body: '<span class="kw">SUM</span>(claim_amt) &gt; 1000' },
+    { n: 6, name: 'ORDER BY', body: 'total <span class="kw">DESC</span>' },
+  ];
+  return clauses.map(c => {
+    const badge = `<span class="step-badge${activeStep === c.n ? '' : ' w'}">${c.n}</span>`;
+    const cls = activeStep === c.n ? 'highlight-clause' : 'kw';
+    return `${badge}<span class="${cls}">${c.name}</span> ${c.body}`;
+  }).join('\n');
+}
+
+function computeExecData(step) {
+  // Step 1: FROM claim (6 rows)
+  let rows = CLAIMS.map(c => ({ ...c, _dropped: false }));
+  if (step === 1) return { kind: 'rows', data: rows };
+
+  // Step 2: WHERE claim_amt > 400
+  rows = rows.map(c => ({ ...c, _dropped: !(c.amt > 400) }));
+  if (step === 2) return { kind: 'rows', data: rows };
+
+  // Step 3: GROUP BY car_id (buckets)
+  rows = rows.filter(c => !c._dropped);
+  const groups = {};
+  rows.forEach(c => {
+    const k = c.car_id === null ? 'NULL' : c.car_id;
+    (groups[k] = groups[k] || { car_id: c.car_id, rows: [], total: 0 });
+    groups[k].rows.push(c);
+    groups[k].total += c.amt;
+  });
+  let gArr = Object.values(groups).map(g => ({ ...g, _dropped: false }));
+  if (step === 3) return { kind: 'groups', data: gArr };
+
+  // Step 4: HAVING total > 1000
+  gArr = gArr.map(g => ({ ...g, _dropped: !(g.total > 1000) }));
+  if (step === 4) return { kind: 'groups', data: gArr };
+
+  // Step 5: SELECT — only kept groups, alias total
+  gArr = gArr.filter(g => !g._dropped).map(g => ({ car_id: g.car_id, total: g.total }));
+  if (step === 5) return { kind: 'selected', data: gArr };
+
+  // Step 6: ORDER BY total DESC
+  gArr = gArr.sort((a, b) => b.total - a.total);
+  return { kind: 'selected', data: gArr };
+}
+
+function renderExecData(step) {
+  const { kind, data } = computeExecData(step);
+  let html = '';
+
+  if (kind === 'rows') {
+    const keptCount = data.filter(r => !r._dropped).length;
+    document.getElementById('execRowCount').textContent = `${keptCount} / ${data.length} rows`;
+    html = `<table class="data-table"><thead>
+      <tr><th>id</th><th>date</th><th>amt</th><th>car_id</th></tr>
+    </thead><tbody>
+      ${data.map(r => `
+        <tr class="${r._dropped ? 'dropped' : ''}">
+          <td>${r.id}</td>
+          <td>${r.date}</td>
+          <td>$${r.amt.toLocaleString()}</td>
+          <td>${r.car_id === null ? 'NULL' : r.car_id}</td>
+        </tr>`).join('')}
+    </tbody></table>`;
+  }
+  else if (kind === 'groups') {
+    const keptCount = data.filter(g => !g._dropped).length;
+    document.getElementById('execRowCount').textContent = `${keptCount} / ${data.length} groups`;
+    html = `<table class="data-table"><thead>
+      <tr><th>car_id</th><th>count</th><th>sum(amt)</th></tr>
+    </thead><tbody>
+      ${data.map(g => `
+        <tr class="${g._dropped ? 'dropped' : ''}">
+          <td>${g.car_id === null ? 'NULL' : g.car_id}</td>
+          <td>${g.rows.length}</td>
+          <td>$${g.total.toLocaleString()}</td>
+        </tr>`).join('')}
+    </tbody></table>`;
+  }
+  else {
+    document.getElementById('execRowCount').textContent = `${data.length} rows`;
+    html = `<table class="data-table"><thead>
+      <tr><th>car_id</th><th>total</th></tr>
+    </thead><tbody>
+      ${data.map(g => `
+        <tr>
+          <td>${g.car_id === null ? 'NULL' : g.car_id}</td>
+          <td>$${g.total.toLocaleString()}</td>
+        </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  document.getElementById('execData').innerHTML = html;
+}
+
+let currentExecStep = 1;
+
+function setExecStep(step) {
+  currentExecStep = step;
+
+  document.querySelectorAll('#execStepButtons button').forEach(b => {
+    const s = +b.dataset.step;
+    b.classList.toggle('active', s === step);
+    b.classList.toggle('passed', s < step);
+  });
+
+  document.querySelectorAll('#logicalList li').forEach(li => {
+    li.classList.toggle('active', +li.dataset.step === step);
+  });
+
+  document.getElementById('execStepNum').textContent = step;
+  document.getElementById('execSql').innerHTML = renderExecSql(step);
+  document.getElementById('execNote').textContent = EXEC_NOTES[step];
+  renderExecData(step);
+}
+
+document.querySelectorAll('#execStepButtons button').forEach(btn => {
+  btn.addEventListener('click', () => setExecStep(+btn.dataset.step));
+});
+
+setExecStep(1);
+
+/* ============================================================
+   SUBQUERY PANEL
+   ============================================================ */
+
+function renderSubIn() {
+  // SELECT id, car_type FROM car WHERE id IN (SELECT DISTINCT car_id FROM claim)
+  const innerResult = [...new Set(CLAIMS.map(c => c.car_id).filter(x => x !== null))].sort();
+  const outerResult = CARS.filter(c => innerResult.includes(c.id));
+
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3>Inner query runs <span style="color:var(--match)">once</span>.</h3>
+
+        <div class="query-box outer">
+          <span class="query-box-label">Outer query</span>
+<pre class="query-sql"><span class="kw">SELECT</span> id, car_type <span class="cmt">-- the table we want</span>
+<span class="kw">FROM</span> <span class="tbl">car</span>
+<span class="kw">WHERE</span> id <span class="kw">IN</span> (</pre>
+
+          <div class="nested-inner-box">
+            <div class="query-box inner">
+              <span class="query-box-label">Inner query · runs 1 time</span>
+<pre class="query-sql"><span class="kw">SELECT DISTINCT</span> car_id
+<span class="kw">FROM</span> <span class="tbl">claim</span></pre>
+              <div class="cte-virtual-table" style="margin-top:12px;border-color:var(--indigo)">
+                <div class="vt-label" style="color:var(--indigo)">Returns this set →</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600">
+                  { ${innerResult.join(', ')} }
+                </div>
+              </div>
+            </div>
+          </div>
+
+<pre class="query-sql">);</pre>
+        </div>
+
+        <div class="teacher-note">
+          The inner query is independent — it doesn't know anything about <code style="font-family:'JetBrains Mono',monospace">car</code>.
+          It runs once, produces a set of values, and the outer query checks each car against that set.
+          If you can run the inner query on its own and get a sensible answer, it's non-correlated.
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3>Result</h3>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em">
+          ${outerResult.length} of ${CARS.length} cars kept — those whose id appears in the inner set
+        </div>
+        <table class="data-table">
+          <thead><tr><th>id</th><th>car_type</th><th>resale</th><th></th></tr></thead>
+          <tbody>
+            ${CARS.map(c => {
+              const kept = outerResult.includes(c);
+              return `<tr class="${kept ? '' : 'dropped'}">
+                <td>${c.id}</td><td>${c.type}</td><td>$${c.resale.toLocaleString()}</td>
+                <td style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${kept ? 'var(--match)' : 'var(--claim)'}">${kept ? '✓ in set' : '✗ not in set'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="insight-box" style="margin-top:18px">
+          Non-correlated subqueries are <strong>cheap</strong> — database runs them once, caches the set, and every outer row gets checked against the same cached result.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSubCorrelated() {
+  // For each car c, compute: SELECT MAX(claim_amt) FROM claim WHERE car_id = c.id
+  const iterations = CARS.map(c => {
+    const claims = CLAIMS.filter(cl => cl.car_id === c.id);
+    const maxClaim = claims.length ? Math.max(...claims.map(cl => cl.amt)) : null;
+    const threshold = 0.05 * c.resale;
+    const kept = maxClaim !== null && maxClaim > threshold;
+    return { car: c, maxClaim, threshold, kept, claimCount: claims.length };
+  });
+
+  return `
+    <div>
+      <div class="correlated-stage" style="margin-bottom: 18px">
+        <div class="nested-visual" style="grid-column: 1 / -1">
+          <h3>Inner query runs <span style="color:var(--claim)">once per outer row</span>.</h3>
+
+          <div class="query-box outer">
+            <span class="query-box-label">Outer · iterates over each car</span>
+<pre class="query-sql"><span class="kw">SELECT</span> id, car_type, resale_value
+<span class="kw">FROM</span> <span class="tbl">car</span> c                    <span class="cmt">-- alias c for the outer row</span>
+<span class="kw">WHERE</span> (</pre>
+
+            <div class="nested-inner-box">
+              <div class="query-box inner">
+                <span class="query-box-label">Inner · references c.id (outer!)</span>
+<pre class="query-sql"><span class="kw">SELECT MAX</span>(claim_amt)
+<span class="kw">FROM</span> <span class="tbl">claim</span>
+<span class="kw">WHERE</span> car_id = <span style="background:var(--amber);padding:1px 4px;color:var(--ink);font-weight:600">c.id</span>  <span class="cmt">&larr; outer row's value</span></pre>
+              </div>
+            </div>
+
+<pre class="query-sql">) &gt; 0.05 * c.resale_value;</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="correlated-stage">
+        <div class="iter-panel">
+          <div class="iter-heading">Outer table — 4 rows = 4 iterations</div>
+          <div class="play-controls">
+            <button id="corrPlay" class="primary">▶ Play iterations</button>
+            <button id="corrReset">Reset</button>
+          </div>
+          <div class="iter-rows" id="corrRows">
+            ${iterations.map((it, i) => `
+              <div class="iter-row" data-iter="${i}">
+                <span class="iter-label">car ${it.car.id}</span>
+                <span style="color:var(--ink-soft)">${it.car.type}, resale $${it.car.resale.toLocaleString()}</span>
+                <span class="iter-verdict" style="display:none"></span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="inner-fire-panel">
+          <div class="fire-counter">
+            <span class="count" id="fireCount">0</span>
+            <span class="label">
+              inner query<br>executions so far
+            </span>
+          </div>
+          <div id="fireDisplay">
+            <div style="font-family:'Fraunces',serif;font-style:italic;color:var(--ink-soft);font-size:14px">
+              Press Play to watch the inner query fire once per outer row.
+              The outer row's value gets substituted in each time.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="teacher-note">
+        With 4 cars, the inner query runs 4 times. With 400,000 cars, it runs 400,000 times.
+        Correlated subqueries are how you express "filter based on the current row's context,"
+        but they're also the first thing to suspect when a query is slow.
+      </div>
+    </div>
+  `;
+}
+
+function renderSubDerived() {
+  // SELECT car_id, avg_amt FROM (SELECT car_id, AVG(amt) FROM claim GROUP BY car_id) AS avg_claims
+  const inner = {};
+  CLAIMS.filter(c => c.car_id !== null).forEach(c => {
+    (inner[c.car_id] = inner[c.car_id] || []).push(c.amt);
+  });
+  const innerTable = Object.keys(inner).map(k => ({
+    car_id: +k,
+    avg_amt: inner[k].reduce((s, x) => s + x, 0) / inner[k].length
+  }));
+  const overallAvg = CLAIMS.reduce((s, c) => s + c.amt, 0) / CLAIMS.length;
+  const outerResult = innerTable.filter(r => r.avg_amt > overallAvg);
+
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3>Subquery in FROM becomes a <em>temporary table</em>.</h3>
+
+        <div class="query-box outer">
+          <span class="query-box-label">Outer · selects from the derived table</span>
+<pre class="query-sql"><span class="kw">SELECT</span> car_id, avg_claim_amt
+<span class="kw">FROM</span> (</pre>
+
+          <div class="nested-inner-box">
+            <div class="query-box inner">
+              <span class="query-box-label">Inner · builds a table on the fly</span>
+<pre class="query-sql"><span class="kw">SELECT</span> car_id, <span class="kw">AVG</span>(claim_amt) <span class="kw">AS</span> avg_claim_amt
+<span class="kw">FROM</span> <span class="tbl">claim</span>
+<span class="kw">GROUP BY</span> car_id</pre>
+              <div class="cte-virtual-table" style="margin-top:12px;border-color:var(--indigo)">
+                <div class="vt-label" style="color:var(--indigo)">Materialises as this table →</div>
+                <table class="data-table">
+                  <thead><tr><th>car_id</th><th>avg_claim_amt</th></tr></thead>
+                  <tbody>
+                    ${innerTable.map(r => `<tr><td>${r.car_id}</td><td>$${r.avg_amt.toFixed(0)}</td></tr>`).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+<pre class="query-sql">) <span class="kw">AS</span> avg_claims               <span class="cmt">-- mandatory alias</span>
+<span class="kw">WHERE</span> avg_claim_amt &gt; <span class="num">${overallAvg.toFixed(0)}</span>;</pre>
+        </div>
+
+        <div class="teacher-note">
+          A derived table is a subquery in FROM. The inner query produces a result,
+          you alias it (the alias is required), and the outer query treats it like any other table.
+          It's fine for one-shot use; if you need to reference it twice, upgrade to a CTE.
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3>Final result</h3>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em">
+          Cars whose average claim exceeds the overall average ($${overallAvg.toFixed(0)})
+        </div>
+        <table class="data-table">
+          <thead><tr><th>car_id</th><th>avg_claim_amt</th><th></th></tr></thead>
+          <tbody>
+            ${innerTable.map(r => {
+              const kept = outerResult.includes(r);
+              return `<tr class="${kept ? '' : 'dropped'}">
+                <td>${r.car_id}</td>
+                <td>$${r.avg_amt.toFixed(0)}</td>
+                <td style="font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${kept ? 'var(--match)' : 'var(--claim)'}">${kept ? '✓ above avg' : '✗ below avg'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="insight-box" style="margin-top:18px">
+          This same query as a CTE reads far cleaner — <strong>WITH avg_claims AS (...) SELECT ... FROM avg_claims</strong>.
+          Derived tables are fine for one-liners; CTEs win once the logic grows.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSub(kind) {
+  const body = document.getElementById('subBody');
+  if (kind === 'in') body.innerHTML = renderSubIn();
+  else if (kind === 'correlated') {
+    body.innerHTML = renderSubCorrelated();
+    setupCorrelatedAnimation();
+  }
+  else body.innerHTML = renderSubDerived();
+}
+
+let corrPlayTimer = null;
+let corrStep = 0;
+
+function setupCorrelatedAnimation() {
+  const iterations = CARS.map(c => {
+    const claims = CLAIMS.filter(cl => cl.car_id === c.id);
+    const maxClaim = claims.length ? Math.max(...claims.map(cl => cl.amt)) : null;
+    const threshold = 0.05 * c.resale;
+    const kept = maxClaim !== null && maxClaim > threshold;
+    return { car: c, maxClaim, threshold, kept, claimCount: claims.length };
+  });
+
+  const playBtn = document.getElementById('corrPlay');
+  const resetBtn = document.getElementById('corrReset');
+  const rows = document.querySelectorAll('#corrRows .iter-row');
+  const fireCount = document.getElementById('fireCount');
+  const fireDisplay = document.getElementById('fireDisplay');
+
+  function reset() {
+    if (corrPlayTimer) { clearTimeout(corrPlayTimer); corrPlayTimer = null; }
+    corrStep = 0;
+    fireCount.textContent = '0';
+    rows.forEach(r => {
+      r.classList.remove('active', 'kept', 'dropped');
+      r.querySelector('.iter-verdict').style.display = 'none';
+    });
+    fireDisplay.innerHTML = `<div style="font-family:'Fraunces',serif;font-style:italic;color:var(--ink-soft);font-size:14px">
+      Press Play to watch the inner query fire once per outer row.
+      The outer row's value gets substituted in each time.
+    </div>`;
+    playBtn.textContent = '▶ Play iterations';
+  }
+
+  function stepOnce() {
+    if (corrStep >= iterations.length) {
+      playBtn.textContent = '↻ Replay';
+      corrPlayTimer = null;
+      return;
+    }
+
+    rows.forEach(r => r.classList.remove('active'));
+
+    const it = iterations[corrStep];
+    const row = rows[corrStep];
+    row.classList.add('active');
+    fireCount.textContent = corrStep + 1;
+
+    const maxDisplay = it.maxClaim !== null ? `$${it.maxClaim.toLocaleString()}` : 'NULL';
+    const verdictText = it.kept ? `${maxDisplay} > $${it.threshold.toFixed(0)} · KEEP` : `${maxDisplay} ≤ $${it.threshold.toFixed(0)} · DROP`;
+
+    fireDisplay.innerHTML = `
+      <div class="fire-substitution">
+<span style="color:var(--ink-soft)">-- firing for car ${it.car.id}, resale=$${it.car.resale.toLocaleString()}</span>
+<span style="color:var(--amber);font-weight:600">SELECT MAX(claim_amt)</span>
+FROM claim
+WHERE car_id = <span class="sub">${it.car.id}</span>;
+
+<span style="color:var(--ink-soft)">-- then compare to</span>
+<span class="sub">${it.maxClaim ?? 'NULL'}</span> &gt; 0.05 * <span class="sub">${it.car.resale}</span>
+</div>
+      <div class="fire-result">
+        <div class="fire-result-label">Inner returned</div>
+        <div style="font-size:20px;font-weight:600;color:${it.kept ? 'var(--match)' : 'var(--claim)'}">
+          ${maxDisplay}
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      row.classList.add(it.kept ? 'kept' : 'dropped');
+      const v = row.querySelector('.iter-verdict');
+      v.style.display = 'block';
+      v.textContent = it.kept ? '✓ kept' : '✗ dropped';
+      v.title = verdictText;
+    }, 700);
+
+    corrStep++;
+    corrPlayTimer = setTimeout(stepOnce, 1800);
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (corrStep >= iterations.length) { reset(); }
+    if (!corrPlayTimer) { stepOnce(); playBtn.textContent = '‖ Playing...'; }
+  });
+
+  resetBtn.addEventListener('click', reset);
+}
+
+document.querySelectorAll('#subControls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#subControls button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (corrPlayTimer) { clearTimeout(corrPlayTimer); corrPlayTimer = null; }
+    renderSub(btn.dataset.sub);
+  });
+});
+
+renderSub('in');
+
+/* ============================================================
+   CTE PANEL
+   ============================================================ */
+
+function renderCteSingle() {
+  // WITH avg_claims AS (...) SELECT car_id, avg_claim_amt FROM avg_claims WHERE avg_claim_amt > 500
+  const inner = {};
+  CLAIMS.filter(c => c.car_id !== null).forEach(c => {
+    (inner[c.car_id] = inner[c.car_id] || []).push(c.amt);
+  });
+  const cteTable = Object.keys(inner).map(k => ({
+    car_id: +k,
+    avg_claim_amt: +(inner[k].reduce((s, x) => s + x, 0) / inner[k].length).toFixed(0)
+  }));
+  const result = cteTable.filter(r => r.avg_claim_amt > 500);
+
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3>Step 1 — define, then use.</h3>
+
+        <div class="cte-chain">
+          <div class="query-box cte">
+            <span class="query-box-label">CTE definition · runs once</span>
+<pre class="query-sql"><span class="kw">WITH</span> <span class="cte-ref">avg_claims</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">AVG</span>(claim_amt) <span class="kw">AS</span> avg_claim_amt
+  <span class="kw">FROM</span> <span class="tbl">claim</span>
+  <span class="kw">GROUP BY</span> car_id
+)</pre>
+            <div class="cte-virtual-table">
+              <div class="vt-label">Virtual table: avg_claims</div>
+              <table class="data-table">
+                <thead><tr><th>car_id</th><th>avg_claim_amt</th></tr></thead>
+                <tbody>
+                  ${cteTable.map(r => `<tr><td>${r.car_id}</td><td>$${r.avg_claim_amt.toLocaleString()}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flow-arrow"><span>named · reusable</span></div>
+
+          <div class="query-box outer" style="border-color:var(--claim)">
+            <span class="query-box-label">Main query · references the CTE by name</span>
+<pre class="query-sql"><span class="kw">SELECT</span> car_id, avg_claim_amt
+<span class="kw">FROM</span> <span class="cte-ref">avg_claims</span>            <span class="cmt">-- looks like a table</span>
+<span class="kw">WHERE</span> avg_claim_amt &gt; <span class="num">500</span>;</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3>Result</h3>
+        <table class="data-table" style="margin-bottom:18px">
+          <thead><tr><th>car_id</th><th>avg_claim_amt</th><th></th></tr></thead>
+          <tbody>
+            ${cteTable.map(r => {
+              const kept = r.avg_claim_amt > 500;
+              return `<tr class="${kept ? '' : 'dropped'}">
+                <td>${r.car_id}</td>
+                <td>$${r.avg_claim_amt.toLocaleString()}</td>
+                <td style="font-size:10px;color:${kept ? 'var(--match)' : 'var(--claim)'};letter-spacing:0.08em;text-transform:uppercase">${kept ? '✓ kept' : '✗ dropped'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="teacher-note">
+          The CTE runs once (just like a non-correlated subquery) but the main query
+          reads like English: "from avg_claims, where avg is above 500."
+          <br><br>Anyone reading this code knows exactly what step 1 was.
+        </div>
+
+        <div class="insight-box" style="margin-top:14px">
+          Think of <strong>WITH</strong> as saying: "first, make this named thing. <em>Then</em>, write the real query." It's a way to read your own logic top-down.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCteMulti() {
+  // Two CTEs used in parallel:
+  //   cte_totals: car_id, total_amt
+  //   cte_counts: car_id, n_claims
+  // main: join them
+  const acc = {};
+  CLAIMS.filter(c => c.car_id !== null).forEach(c => {
+    (acc[c.car_id] = acc[c.car_id] || { total: 0, n: 0 });
+    acc[c.car_id].total += c.amt;
+    acc[c.car_id].n += 1;
+  });
+  const totals = Object.keys(acc).map(k => ({ car_id: +k, total_amt: acc[k].total }));
+  const counts = Object.keys(acc).map(k => ({ car_id: +k, n_claims: acc[k].n }));
+  const joined = Object.keys(acc).map(k => ({
+    car_id: +k,
+    total: acc[k].total,
+    n: acc[k].n,
+    avg: Math.round(acc[k].total / acc[k].n)
+  }));
+
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3>Define two independent steps, then combine.</h3>
+
+        <div class="cte-chain">
+          <div class="query-box cte">
+            <span class="query-box-label">CTE 1 · runs once</span>
+<pre class="query-sql"><span class="kw">WITH</span> <span class="cte-ref">cte_totals</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">SUM</span>(claim_amt) <span class="kw">AS</span> total_amt
+  <span class="kw">FROM</span> <span class="tbl">claim</span> <span class="kw">GROUP BY</span> car_id
+),</pre>
+            <div class="cte-virtual-table">
+              <div class="vt-label">cte_totals</div>
+              <table class="data-table">
+                <thead><tr><th>car_id</th><th>total_amt</th></tr></thead>
+                <tbody>${totals.map(r => `<tr><td>${r.car_id}</td><td>$${r.total_amt.toLocaleString()}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="query-box cte" style="margin-top:14px">
+            <span class="query-box-label">CTE 2 · independent from CTE 1</span>
+<pre class="query-sql"><span class="cte-ref">cte_counts</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> n_claims
+  <span class="kw">FROM</span> <span class="tbl">claim</span> <span class="kw">GROUP BY</span> car_id
+)</pre>
+            <div class="cte-virtual-table">
+              <div class="vt-label">cte_counts</div>
+              <table class="data-table">
+                <thead><tr><th>car_id</th><th>n_claims</th></tr></thead>
+                <tbody>${counts.map(r => `<tr><td>${r.car_id}</td><td>${r.n_claims}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flow-arrow"><span>both available below</span></div>
+
+          <div class="query-box outer" style="border-color:var(--claim)">
+            <span class="query-box-label">Main query · joins both CTEs</span>
+<pre class="query-sql"><span class="kw">SELECT</span> t.car_id, t.total_amt, c.n_claims,
+       t.total_amt / c.n_claims <span class="kw">AS</span> avg
+<span class="kw">FROM</span> <span class="cte-ref">cte_totals</span> t
+<span class="kw">JOIN</span> <span class="cte-ref">cte_counts</span> c <span class="kw">ON</span> t.car_id = c.car_id;</pre>
+          </div>
+        </div>
+
+        <div class="teacher-note">
+          Notice the comma between CTEs — only the <code style="font-family:'JetBrains Mono',monospace">WITH</code> keyword appears once at the top.
+          After that, each CTE is defined and separated by commas.
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3>Result</h3>
+        <table class="data-table">
+          <thead><tr><th>car_id</th><th>total</th><th>n_claims</th><th>avg</th></tr></thead>
+          <tbody>
+            ${joined.map(r => `<tr>
+              <td>${r.car_id}</td>
+              <td>$${r.total.toLocaleString()}</td>
+              <td>${r.n}</td>
+              <td>$${r.avg.toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <div class="insight-box" style="margin-top:18px">
+          Both CTEs compute once. The main query joins them like any pair of tables.
+          The same thing written as nested subqueries would be <strong>painful</strong> to read.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCteChain() {
+  // CTE 2 uses CTE 1
+  // cte_totals: car_id, total_amt
+  // big_totals: SELECT * FROM cte_totals WHERE total_amt > 1000
+  const acc = {};
+  CLAIMS.filter(c => c.car_id !== null).forEach(c => {
+    (acc[c.car_id] = acc[c.car_id] || 0);
+    acc[c.car_id] += c.amt;
+  });
+  const totals = Object.keys(acc).map(k => ({ car_id: +k, total_amt: acc[k] }));
+  const big = totals.filter(r => r.total_amt > 1000);
+  const joined = big.map(r => ({
+    car_id: r.car_id,
+    total_amt: r.total_amt,
+    car_type: CARS.find(c => c.id === r.car_id)?.type,
+  }));
+
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3>Step → filtered step → join.</h3>
+
+        <div class="cte-chain">
+          <div class="query-box cte">
+            <span class="query-box-label">CTE 1 · aggregate</span>
+<pre class="query-sql"><span class="kw">WITH</span> <span class="cte-ref">cte_totals</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">SUM</span>(claim_amt) <span class="kw">AS</span> total_amt
+  <span class="kw">FROM</span> <span class="tbl">claim</span> <span class="kw">GROUP BY</span> car_id
+),</pre>
+            <div class="cte-virtual-table">
+              <div class="vt-label">cte_totals</div>
+              <table class="data-table">
+                <thead><tr><th>car_id</th><th>total_amt</th></tr></thead>
+                <tbody>${totals.map(r => `<tr><td>${r.car_id}</td><td>$${r.total_amt.toLocaleString()}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flow-arrow"><span>filter the first ↓</span></div>
+
+          <div class="query-box cte">
+            <span class="query-box-label">CTE 2 · references CTE 1</span>
+<pre class="query-sql"><span class="cte-ref">big_totals</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> * <span class="kw">FROM</span> <span class="cte-ref">cte_totals</span>
+  <span class="kw">WHERE</span> total_amt &gt; <span class="num">1000</span>
+)</pre>
+            <div class="cte-virtual-table">
+              <div class="vt-label">big_totals</div>
+              <table class="data-table">
+                <thead><tr><th>car_id</th><th>total_amt</th></tr></thead>
+                <tbody>${big.map(r => `<tr><td>${r.car_id}</td><td>$${r.total_amt.toLocaleString()}</td></tr>`).join('')}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flow-arrow"><span>join to car for context</span></div>
+
+          <div class="query-box outer" style="border-color:var(--claim)">
+            <span class="query-box-label">Main query · brings in car details</span>
+<pre class="query-sql"><span class="kw">SELECT</span> b.car_id, c.car_type, b.total_amt
+<span class="kw">FROM</span> <span class="cte-ref">big_totals</span> b
+<span class="kw">JOIN</span> <span class="tbl">car</span> c <span class="kw">ON</span> c.id = b.car_id
+<span class="kw">ORDER BY</span> b.total_amt <span class="kw">DESC</span>;</pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3>Result — the full pipeline</h3>
+        <table class="data-table">
+          <thead><tr><th>car_id</th><th>car_type</th><th>total_amt</th></tr></thead>
+          <tbody>
+            ${joined.sort((a,b) => b.total_amt - a.total_amt).map(r => `<tr>
+              <td>${r.car_id}</td>
+              <td>${r.car_type}</td>
+              <td>$${r.total_amt.toLocaleString()}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+
+        <div class="teacher-note">
+          Three steps, each named, each building on the last.
+          You can read this query top-to-bottom and understand the intent in about 15 seconds —
+          which is the whole argument for CTEs over deeply nested subqueries.
+        </div>
+
+        <div class="insight-box" style="margin-top:14px">
+          CTEs compose <strong>forward</strong>. Any CTE can reference any CTE defined above it.
+          They cannot reference themselves — unless you use <strong>WITH RECURSIVE</strong>, which is how you walk trees and graphs.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCteVs() {
+  return `
+    <div class="nested-stage">
+      <div class="nested-visual">
+        <h3 style="color:var(--indigo)">Same result, as a subquery.</h3>
+        <div class="query-box outer">
+          <span class="query-box-label">Nested — one block</span>
+<pre class="query-sql"><span class="kw">SELECT</span> car_id, avg_claim_amt
+<span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">AVG</span>(claim_amt) <span class="kw">AS</span> avg_claim_amt
+  <span class="kw">FROM</span> <span class="tbl">claim</span>
+  <span class="kw">GROUP BY</span> car_id
+) <span class="kw">AS</span> avg_claims
+<span class="kw">WHERE</span> avg_claim_amt &gt; (
+  <span class="kw">SELECT</span> <span class="kw">AVG</span>(claim_amt) <span class="kw">FROM</span> <span class="tbl">claim</span>
+);</pre>
+        </div>
+        <div class="teacher-note" style="border-left-color: var(--indigo)">
+          Two subqueries, one inline, one nested. Readable with effort. Now try refactoring it after six months.
+        </div>
+      </div>
+
+      <div class="nested-visual">
+        <h3 style="color:var(--amber)">Same result, as a CTE.</h3>
+        <div class="query-box cte">
+          <span class="query-box-label">Named steps, top to bottom</span>
+<pre class="query-sql"><span class="kw">WITH</span> <span class="cte-ref">avg_claims</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> car_id, <span class="kw">AVG</span>(claim_amt) <span class="kw">AS</span> avg_claim_amt
+  <span class="kw">FROM</span> <span class="tbl">claim</span>
+  <span class="kw">GROUP BY</span> car_id
+),
+<span class="cte-ref">overall</span> <span class="kw">AS</span> (
+  <span class="kw">SELECT</span> <span class="kw">AVG</span>(claim_amt) <span class="kw">AS</span> avg_all
+  <span class="kw">FROM</span> <span class="tbl">claim</span>
+)
+<span class="kw">SELECT</span> a.car_id, a.avg_claim_amt
+<span class="kw">FROM</span> <span class="cte-ref">avg_claims</span> a, <span class="cte-ref">overall</span> o
+<span class="kw">WHERE</span> a.avg_claim_amt &gt; o.avg_all;</pre>
+        </div>
+        <div class="teacher-note" style="border-left-color: var(--amber)">
+          The exact same result, but each step is named. You can read it top-down like an outline.
+          Bonus: if you want to debug, you can SELECT from the CTE directly.
+        </div>
+
+        <div class="insight-box" style="margin-top:14px; background: var(--amber); color: var(--ink)">
+          <div style="font-family:'Geist',sans-serif;font-style:normal;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px;font-weight:600">Rule of thumb</div>
+          Once your subquery breaks <strong>4 lines</strong>, or you'd need to reference it twice, <strong>convert it to a CTE</strong>. Your future self (and your teammates) will thank you.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCte(kind) {
+  const body = document.getElementById('cteBody');
+  if (kind === 'single') body.innerHTML = renderCteSingle();
+  else if (kind === 'multi') body.innerHTML = renderCteMulti();
+  else if (kind === 'chain') body.innerHTML = renderCteChain();
+  else body.innerHTML = renderCteVs();
+}
+
+document.querySelectorAll('#cteControls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#cteControls button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCte(btn.dataset.cte);
+  });
+});
+
+renderCte('single');
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+   ============================================================ */
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  const tabMap = { 'e': 'exec', 's': 'sub', 'c': 'cte', 'w': 'choose' };
+  if (tabMap[e.key.toLowerCase()]) {
+    document.querySelector(`nav.tabs button[data-tab="${tabMap[e.key.toLowerCase()]}"]`).click();
+    return;
+  }
+
+  const activeTab = document.querySelector('nav.tabs button.active').dataset.tab;
+
+  if (activeTab === 'exec') {
+    const n = parseInt(e.key);
+    if (n >= 1 && n <= 6) setExecStep(n);
+    if (e.key === ' ') {
+      e.preventDefault();
+      const next = currentExecStep >= 6 ? 1 : currentExecStep + 1;
+      setExecStep(next);
+    }
+  }
+  else if (activeTab === 'sub') {
+    const map = { '1': 'in', '2': 'correlated', '3': 'derived' };
+    if (map[e.key]) document.querySelector(`#subControls button[data-sub="${map[e.key]}"]`).click();
+  }
+  else if (activeTab === 'cte') {
+    const map = { '1': 'single', '2': 'multi', '3': 'chain', '4': 'vs' };
+    if (map[e.key]) document.querySelector(`#cteControls button[data-cte="${map[e.key]}"]`).click();
+  }
+});
+
+</script>
+</body>
+</html>
